@@ -71,10 +71,29 @@ if  [ -n "$INPUT_DOCKER_LOGIN_PASSWORD" ] || [ -n "$INPUT_DOCKER_LOGIN_USER" ] |
   docker login -u "$INPUT_DOCKER_LOGIN_USER" -p "$INPUT_DOCKER_LOGIN_PASSWORD" "$INPUT_DOCKER_LOGIN_REGISTRY"
 fi
 
-echo "Command: ${DEPLOYMENT_COMMAND} pull"
-${DEPLOYMENT_COMMAND} pull
+MAX_RETRIES=15
+RETRY_COUNT=0
+SUCCESS=false
 
-echo "Command: ${DEPLOYMENT_COMMAND} ${INPUT_ARGS}"
-${DEPLOYMENT_COMMAND} ${INPUT_ARGS}
+while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
+    echo "Command: ${DEPLOYMENT_COMMAND} pull (Attempt: $((RETRY_COUNT+1)))"
+    ${DEPLOYMENT_COMMAND} pull && SUCCESS=true || echo "Command failed. Retrying in 5 seconds..."
+    RETRY_COUNT=$((RETRY_COUNT+1))
+    if [ $SUCCESS = false ]; then
+        sleep 5
+    fi
+done
+
+SUCCESS=false
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ] && [ $SUCCESS = false ]; do
+    echo "Command: ${DEPLOYMENT_COMMAND} ${INPUT_ARGS} (Attempt: $((RETRY_COUNT+1)))"
+    ${DEPLOYMENT_COMMAND} ${INPUT_ARGS} && SUCCESS=true || echo "Command failed. Retrying in 5 seconds..."
+    RETRY_COUNT=$((RETRY_COUNT+1))
+    if [ $SUCCESS = false ]; then
+        sleep 5
+    fi
+done
 
 
